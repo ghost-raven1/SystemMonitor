@@ -1,9 +1,16 @@
 #include "battery.h"
+#include "platform.h"
+
+#ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
 #include <IOKit/IOKitLib.h>
+#else
+// Linux версия будет подключена через условную компиляцию
+#endif
 
+#ifdef __APPLE__
 static int cfnumber_to_int(CFNumberRef num, int *out_val) {
     if (!num || !out_val) return 0;
     if (CFGetTypeID(num) != CFNumberGetTypeID()) return 0;
@@ -108,4 +115,4 @@ int get_battery_cycle_count(int *cycles) {
     return 0;
 }
 
-
+#endif // __APPLE__

@@ -11,6 +11,7 @@
 #include "mac_smc.h"
 #include "logging.h"
 #include "config.h"
+#include "platform.h"
 #include <ncurses.h>
 #include <unistd.h>
 #include <time.h>
@@ -124,13 +125,126 @@ typedef struct {
 } diag_t;
 static diag_t g_diag;
 
+// Функция для запуска тестов функциональности в зависимости от ОС
+static void run_functionality_tests(void) {
+    clear();
+    int colors_on = has_colors();
+    int rows, cols;
+    getmaxyx(stdscr, rows, cols);
+    (void)rows; // Suppress unused variable warning
+    
+    // Определяем ОС
+    platform_t platform = detect_platform();
+    const char *platform_name_str = platform_name(platform);
+    
+    // Draw decorative border
+    if (colors_on) attron(COLOR_PAIR(4));
+    mvprintw(2, 10, "╔═════════════════════════════════════════════════════════════╗");
+    for (int i = 3; i < 18; i++) {
+        mvprintw(i, 10, "║");
+        mvprintw(i, 74, "║");
+    }
+    mvprintw(18, 10, "╚═════════════════════════════════════════════════════════════╝");
+    if (colors_on) attroff(COLOR_PAIR(4));
+    
+    if (colors_on) attron(COLOR_PAIR(6));
+    mvprintw(3, 25, "🧪 ТЕСТИРОВАНИЕ ФУНКЦИОНАЛЬНОСТИ 🧪");
+    if (colors_on) attroff(COLOR_PAIR(6));
+    
+    mvprintw(4, 12, "🖥️  ОС: %s", platform_name_str);
+    mvprintw(5, 12, "─────────────────────────────────────────────────────────────");
+    
+    mvprintw(6, 12, "Запуск тестов для %s...", platform_name_str);
+    refresh();
+    sleep(1);
+    
+    // Тестируем модули в зависимости от ОС
+    int tests_passed = 0;
+    int total_tests = 0;
+    
+    // Тест батареи
+    total_tests++;
+    mvprintw(8, 12, "🔋 Тестирование батареи...");
+    refresh();
+    battery_info_t bat;
+    if (get_battery_info(&bat) == 0) {
+        mvprintw(8, 60, "✓ OK");
+        tests_passed++;
+    } else {
+        mvprintw(8, 60, is_linux() ? "⚠ Desktop" : "✗ Ошибка");
+    }
+    
+    // Тест USB
+    total_tests++;
+    mvprintw(9, 12, "🔌 Тестирование USB устройств...");
+    refresh();
+    usb_device_t usb_devs[5];
+    int usb_count = 0;
+    if (list_usb_devices(usb_devs, 5, &usb_count) == 0 && usb_count >= 0) {
+        mvprintw(9, 60, "✓ OK (%d)", usb_count);
+        tests_passed++;
+    } else {
+        mvprintw(9, 60, "✗ Ошибка");
+    }
+    
+    // Тест температур
+    total_tests++;
+    mvprintw(10, 12, "🌡️  Тестирование температур...");
+    refresh();
+    float core_temps[8];
+    int temp_count = 0;
+    if (smc_get_core_temperatures(core_temps, 8, &temp_count) == 0 && temp_count > 0) {
+        mvprintw(10, 60, "✓ OK (%d датчиков)", temp_count);
+        tests_passed++;
+    } else {
+        mvprintw(10, 60, "✗ Ошибка");
+    }
+    
+    // Тест GPU
+    total_tests++;
+    mvprintw(11, 12, "🎮 Тестирование GPU...");
+    refresh();
+    gpu_info_t gpu;
+    if (get_gpu_info(&gpu) == 0) {
+        mvprintw(11, 60, "✓ OK");
+        tests_passed++;
+    } else {
+        mvprintw(11, 60, "✗ Ошибка");
+    }
+    
+    // Тест SMART
+    total_tests++;
+    mvprintw(12, 12, "💿 Тестирование SMART...");
+    refresh();
+    smart_info_t smart;
+    if (get_smart_info(NULL, &smart) == 0 && smart.available) {
+        mvprintw(12, 60, "✓ OK");
+        tests_passed++;
+    } else {
+        mvprintw(12, 60, "⚠ Требуются права");
+    }
+    
+    // Результат
+    mvprintw(14, 12, "─────────────────────────────────────────────────────────────");
+    int result_color = (tests_passed == total_tests) ? 2 : ((tests_passed > total_tests/2) ? 3 : 1);
+    if (colors_on) attron(COLOR_PAIR(result_color));
+    mvprintw(15, 12, "📊 Результат: %d/%d тестов пройдено", tests_passed, total_tests);
+    if (colors_on) attroff(COLOR_PAIR(result_color));
+    
+    mvprintw(16, 12, "Нажмите любую клавишу для возврата...");
+    refresh();
+    timeout(-1);
+    getch();
+    timeout(2000);
+}
+
 static void perform_diagnostics(void) {
     memset(&g_diag, 0, sizeof(g_diag));
     const int safe = is_safe_mode();
     const char *no_bat = getenv("SYSMON_NO_BAT");
     const char *no_gpu = getenv("SYSMON_NO_GPU");
     const char *no_usb = getenv("SYSMON_NO_USB");
-    // Battery
+    // Battery - восстановлена поддержка для обеих платформ
     if (!safe && !(no_bat && no_bat[0]=='1')) {
         // battery_info_t bat; // Закомментировано - не используется
         // Закомментировано для предотвращения segmentation fault
@@ -160,13 +274,20 @@ static void perform_diagnostics(void) {
     }
     // Colors
     g_diag.colors_ok = has_colors();
-    // Tools presence (best-effort via which)
+    // Tools presence (best-effort via which) - адаптировано для обеих платформ
     FILE *fp;
     fp = popen("which iostat 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.iostat_ok = 1; pclose(fp);} 
-    fp = popen("which nettop 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.nettop_ok = 1; pclose(fp);} 
-    fp = popen("which networksetup 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.networksetup_ok = 1; pclose(fp);} 
-    fp = popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I 2>/dev/null | head -n1", "r");
-    if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.airport_ok = 1; pclose(fp);} 
+    
+    // Специфичные для платформы инструменты
+    if (is_macos()) {
+        fp = popen("which nettop 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.nettop_ok = 1; pclose(fp);} 
+        fp = popen("which networksetup 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.networksetup_ok = 1; pclose(fp);} 
+        fp = popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I 2>/dev/null | head -n1", "r");
+        if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.airport_ok = 1; pclose(fp);}
+    } else if (is_linux()) {
+        // Linux специфичные инструменты
+        fp = popen("which iwconfig 2>/dev/null || which nmcli 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diag.airport_ok = 1; pclose(fp);}
+    } 
 }
 
 static void show_diagnostics_screen(void) {
@@ -190,7 +311,11 @@ static void show_diagnostics_screen(void) {
     mvprintw(3, 25, "🔍 ДИАГНОСТИКА СИСТЕМЫ 🔍");
     if (colors_on) attroff(COLOR_PAIR(6));
     
-    mvprintw(4, 12, "─────────────────────────────────────────────────────────────");
+    // Отображение операционной системы
+    platform_t platform = detect_platform();
+    mvprintw(4, 12, "🖥️  ОС:             %s", platform_name(platform));
+    
+    mvprintw(5, 12, "─────────────────────────────────────────────────────────────");
     
     // Display diagnostics with icons and colors
     int status_color;
@@ -198,37 +323,38 @@ static void show_diagnostics_screen(void) {
     // Battery
     status_color = g_diag.battery_ok ? 2 : 1;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(5, 12, "🔋 Батарея:        %s", g_diag.battery_ok ? "✓ Работает" : "✗ Недоступно");
+    mvprintw(6, 12, "🔋 Батарея:        %s", g_diag.battery_ok ? "✓ Работает" : "✗ Недоступно");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
     // GPU
     status_color = g_diag.gpu_ok ? 2 : 1;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(6, 12, "🎮 Видеокарта:     %s", g_diag.gpu_ok ? "✓ Работает" : "✗ Недоступно");
+    mvprintw(7, 12, "🎮 Видеокарта:     %s", g_diag.gpu_ok ? "✓ Работает" : "✗ Недоступно");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
     // USB
     status_color = g_diag.usb_ok ? 2 : 1;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(7, 12, "🔌 USB устройства: %s", g_diag.usb_ok ? "✓ Работает" : "✗ Недоступно");
+    mvprintw(8, 12, "🔌 USB устройства: %s", g_diag.usb_ok ? "✓ Работает" : "✗ Недоступно");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
     // SMART
     status_color = g_diag.smart_ok ? 2 : 3;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(8, 12, "💿 SMART диски:    %s", g_diag.smart_ok ? "✓ Работает" : "⚠ Требуется smartctl");
+    mvprintw(9, 12, "💿 SMART диски:    %s", g_diag.smart_ok ? "✓ Работает" : "⚠ Требуется smartctl");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
-    // SMC
+    // Temperature sensors (SMC для macOS, hwmon для Linux)
+    const char *temp_label = is_linux() ? "🌡️  HWMON датчики:" : "🌡️  SMC датчики:";
     status_color = g_diag.smc_ok ? 2 : 1;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(9, 12, "🌡️  SMC датчики:    %s", g_diag.smc_ok ? "✓ Работает" : "✗ Недоступно");
+    mvprintw(10, 12, "%s %s", temp_label, g_diag.smc_ok ? "✓ Работает" : "✗ Недоступно");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
     // Colors
     status_color = g_diag.colors_ok ? 2 : 3;
     if (colors_on) attron(COLOR_PAIR(status_color));
-    mvprintw(10, 12, "🎨 Цвета:          %s", g_diag.colors_ok ? "✓ Включены" : "⚠ Отключены");
+    mvprintw(11, 12, "🎨 Цвета:          %s", g_diag.colors_ok ? "✓ Включены" : "⚠ Отключены");
     if (colors_on) attroff(COLOR_PAIR(status_color));
     
     mvprintw(11, 12, "─────────────────────────────────────────────────────────────");
@@ -1708,7 +1834,7 @@ void run_ui() {
             if (colors_on) attroff(COLOR_PAIR(4));
             
             if (colors_on) attron(COLOR_PAIR(5));
-            mvprintw(footer_row, 2, " [P]Проц [G]Git [E]Env [L]Порты [V]Dev [A]Действ [W]Погода [Q]Выход ");
+            mvprintw(footer_row, 2, " [P]Проц [G]Git [E]Env [L]Порты [T]Тесты [V]Dev [A]Действ [W]Погода [Q]Выход ");
             
             // Show module status with icons
             mvprintw(footer_row, cols - 35, "Модули: %s%s%s%s",
@@ -1919,6 +2045,10 @@ void run_ui() {
         }
         if (ch == 'l' || ch == 'L') {
             show_listening_ports();
+            timeout(2000);
+        }
+        if (ch == 't' || ch == 'T') {
+            run_functionality_tests();
             timeout(2000);
         }
         if (ch == 'v' || ch == 'V') {

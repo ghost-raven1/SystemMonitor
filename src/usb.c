@@ -1,9 +1,14 @@
 #include "usb.h"
+#include "platform.h"
+
+#ifdef __APPLE__
 #include <IOKit/IOKitLib.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/usb/USB.h>
 #include <string.h>
+#endif
 
+#ifdef __APPLE__
 int list_usb_devices(usb_device_t *out, int max, int *count) {
 	if (!out || max <= 0 || !count) return -1;
 	*count = 0;
@@ -39,5 +44,4 @@ int list_usb_devices(usb_device_t *out, int max, int *count) {
 	IOObjectRelease(iter);
 	return 0;
 }
-
-
+#endif // __APPLE__
