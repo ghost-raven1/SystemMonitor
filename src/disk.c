@@ -4,11 +4,15 @@
 #include <stdio.h>
 
 float get_disk_usage(const char *path) {
+    if (!path) return 0.0f;
+
     struct statvfs buf;
     if (statvfs(path, &buf) != 0) return 0.0f;
 
-    unsigned long total = buf.f_blocks * buf.f_frsize;
-    unsigned long free = buf.f_bfree * buf.f_frsize;
+    unsigned long long total = (unsigned long long)buf.f_blocks * buf.f_frsize;
+    unsigned long long free = (unsigned long long)buf.f_bfree * buf.f_frsize;
+
+    if (total == 0) return 0.0f;
 
     return (float)(total - free) / total * 100.0f;
 }
@@ -23,7 +27,10 @@ const char *get_disk_info() {
         if (fscanf(fp, "%f %f", &rkb, &wkb) != 2) { rkb = -1.0f; wkb = -1.0f; }
         pclose(fp);
     }
-    if (rkb >= 0.0f && wkb >= 0.0f) snprintf(buf, sizeof(buf), "/ usage: %.2f%%  R: %.1f KB/s  W: %.1f KB/s", root_usage, rkb, wkb);
-    else snprintf(buf, sizeof(buf), "/ usage: %.2f%%", root_usage);
+    if (rkb >= 0.0f && wkb >= 0.0f) {
+        snprintf(buf, sizeof(buf), "/ usage: %.2f%%  R: %.1f KB/s  W: %.1f KB/s", root_usage, rkb, wkb);
+    } else {
+        snprintf(buf, sizeof(buf), "/ usage: %.2f%%", root_usage);
+    }
     return buf;
 }

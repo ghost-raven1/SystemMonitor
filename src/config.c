@@ -1,5 +1,6 @@
 // config.c
 #include "config.h"
+#include "logging.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,18 +24,47 @@ static int parse_line(const char *line, char *key, size_t ksz, char *val, size_t
 }
 
 int load_config(const char *path) {
-    if (!path) return -1;
+    if (!path) {
+        log_error("Config path is NULL");
+        return -1;
+    }
+
     FILE *fp = fopen(path, "r");
-    if (!fp) return -1;
+    if (!fp) {
+        log_error("Failed to open config file");
+        return -1;
+    }
+
     char line[512];
     char key[128], val[384];
+    int valid_lines = 0;
+
     while (fgets(line, sizeof(line), fp)) {
-        if (!parse_line(line, key, sizeof(key), val, sizeof(val))) continue;
-        // Для простоты применяем конфиг как переменные окружения процесса
-        // Перезаписываем существующие значения
-        setenv(key, val, 1);
+        if (!parse_line(line, key, sizeof(key), val, sizeof(val))) {
+            continue;
+        }
+
+        // Валидация ключа и значения
+        if (strlen(key) == 0 || strlen(val) == 0) {
+            log_error("Invalid config line format");
+            continue;
+        }
+
+        // Применяем конфиг как переменные окружения процесса
+        if (setenv(key, val, 1) != 0) {
+            log_error("Failed to set environment variable");
+        } else {
+            valid_lines++;
+        }
     }
+
     fclose(fp);
+
+    if (valid_lines == 0) {
+        log_error("No valid configuration lines found");
+        return -1;
+    }
+
     return 0;
 }
 

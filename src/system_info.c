@@ -4,8 +4,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <sys/sysctl.h>
+#include <errno.h>
 
 float get_cpu_usage() {
     static host_cpu_load_info_data_t prev = {0};
@@ -28,7 +27,9 @@ float get_cpu_usage() {
         system += cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM];
         idle   += cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE];
     }
-    vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCPUInfo * sizeof(integer_t));
+    if (cpuInfo) {
+        vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCPUInfo * sizeof(integer_t));
+    }
 
     unsigned long long total = user + system + idle;
     unsigned long long diffUser, diffSystem, diffIdle, diffTotal;
@@ -52,21 +53,51 @@ float get_cpu_usage() {
     return usage;
 }
 
+// Кеширование для производительности
+static long cached_page_size = 0;
+static time_t page_size_cache_time = 0;
+
 float get_memory_usage() {
+    static vm_statistics_data_t cached_vmstat;
+    static time_t cache_time = 0;
+    static float cached_result = -1.0f;
+
+    time_t now = time(NULL);
+
+    // Кешируем результат на 1 секунду для производительности
+    if (cache_time > 0 && (now - cache_time) < 1 && cached_result >= 0) {
+        return cached_result;
+    }
+
     mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
     vm_statistics_data_t vmstat;
     if (host_statistics(mach_host_self(), HOST_VM_INFO,
-                        (host_info_t)&vmstat, &count) != KERN_SUCCESS) {
+                         (host_info_t)&vmstat, &count) != KERN_SUCCESS) {
         return -1;
     }
 
-    int64_t free = vmstat.free_count * sysconf(_SC_PAGESIZE);
-    int64_t active = vmstat.active_count * sysconf(_SC_PAGESIZE);
-    int64_t inactive = vmstat.inactive_count * sysconf(_SC_PAGESIZE);
-    int64_t wired = vmstat.wire_count * sysconf(_SC_PAGESIZE);
+    // Кешируем page_size на 5 минут
+    if (cached_page_size == 0 || (now - page_size_cache_time) > 300) {
+        cached_page_size = sysconf(_SC_PAGESIZE);
+        page_size_cache_time = now;
+    }
+
+    long page_size = cached_page_size;
+    if (page_size <= 0) return -1.0f;
+
+    int64_t free = vmstat.free_count * page_size;
+    int64_t active = vmstat.active_count * page_size;
+    int64_t inactive = vmstat.inactive_count * page_size;
+    int64_t wired = vmstat.wire_count * page_size;
     int64_t total = free + active + inactive + wired;
 
-    return (float)(active + inactive + wired) / total * 100.0f;
+    if (total <= 0) return -1.0f;
+
+    cached_result = (float)(active + inactive + wired) / total * 100.0f;
+    cache_time = now;
+    cached_vmstat = vmstat;
+
+    return cached_result;
 }
 
 int get_memory_breakdown(memory_breakdown_t *out) {
@@ -141,7 +172,8 @@ int get_per_core_usage(float *out, int max_cores, int *written) {
 
     int n = (int)cpuCount;
     if (n > max_cores) n = max_cores;
-    for (int i = 0; i < n; i++) {
+    if (n > 256) n = 256; // Защита от переполнения массива
+    for (int i = 0; i < n && i < 256; i++) {
         unsigned long long user = cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_USER];
         unsigned long long system = cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_SYSTEM];
         unsigned long long idle = cpuInfo[(CPU_STATE_MAX * i) + CPU_STATE_IDLE];
@@ -159,7 +191,9 @@ int get_per_core_usage(float *out, int max_cores, int *written) {
         prev_idle[i] = idle;
     }
     initialized = 1;
-    vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCPUInfo * sizeof(integer_t));
+    if (cpuInfo) {
+        vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCPUInfo * sizeof(integer_t));
+    }
     if (written) *written = n;
     return 0;
 }

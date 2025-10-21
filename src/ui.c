@@ -246,11 +246,12 @@ static void perform_diagnostics(void) {
     const char *no_usb = getenv("SYSMON_NO_USB");
     // Battery - восстановлена поддержка для обеих платформ
     if (!safe && !(no_bat && no_bat[0]=='1')) {
-        // battery_info_t bat; // Закомментировано - не используется
-        // Закомментировано для предотвращения segmentation fault
-        // if (get_battery_info(&bat) == 0 && (bat.percentage >= 0 || bat.charging >= 0)) g_diag.battery_ok = 1;
-        // Принудительно отключаем батарею
-        g_diag.battery_ok = 0;
+        battery_info_t bat;
+        if (get_battery_info(&bat) == 0 && (bat.percentage >= 0 || bat.charging >= 0)) {
+            g_diag.battery_ok = 1;
+        } else {
+            g_diag.battery_ok = 0;
+        }
     }
     // GPU
     if (!safe && !(no_gpu && no_gpu[0]=='1')) {
@@ -1727,15 +1728,9 @@ void run_ui() {
             mvprintw_clip(17, 2, "Battery:      (disabled)");
         } else {
             if (getenv("SYSMON_DEBUG")) fprintf(stderr, "DBG: battery start\n");
-            // Закомментировано для предотвращения segmentation fault
-            // get_battery_info(&bat);
-            // get_battery_cycle_count(&cycles);
-            
-            // Устанавливаем значения по умолчанию
-            bat.percentage = -1;
-            bat.charging = -1;
-            bat.time_remaining_min = -1;
-            cycles = -1;
+            // Восстанавливаем функциональность батареи
+            get_battery_info(&bat);
+            get_battery_cycle_count(&cycles);
             
             if (getenv("SYSMON_DEBUG")) fprintf(stderr, "DBG: battery ok (disabled)\n");
             char bline[128]; bline[0] = '\0';

@@ -24,8 +24,10 @@ static void read_total_bytes(unsigned long long *rx, unsigned long long *tx) {
 		if (ifa->ifa_data == NULL) continue;
 
 		struct if_data *data = (struct if_data *)ifa->ifa_data;
-		*rx += data->ifi_ibytes;
-		*tx += data->ifi_obytes;
+		if (data) {
+			*rx += data->ifi_ibytes;
+			*tx += data->ifi_obytes;
+		}
 	}
 	freeifaddrs(ifap);
 }

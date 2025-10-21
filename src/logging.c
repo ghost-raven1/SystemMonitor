@@ -2,13 +2,29 @@
 #include "logging.h"
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
+#include <errno.h>
 
 void log_info(const char *msg) {
-    printf("[INFO] %s\n", msg);
+    if (!msg) return;
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%H:%M:%S", tm);
+    printf("[%s INFO] %s\n", timestamp, msg);
 }
 
 void log_error(const char *msg) {
-    printf("[ERROR] %s\n", msg);
+    if (!msg) return;
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%H:%M:%S", tm);
+    printf("[%s ERROR] %s", timestamp, msg);
+    if (errno != 0) {
+        printf(" (errno: %d - %s)", errno, strerror(errno));
+    }
+    printf("\n");
 }
 
 int log_metrics_csv(const char *path,

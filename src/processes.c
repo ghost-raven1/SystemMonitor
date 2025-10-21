@@ -11,7 +11,7 @@ size_t get_process_list(process_info_t *list, size_t max) {
     if (count <= 0) return 0;
 
     size_t n = 0;
-    for (int i = 0; i < count && n < max; i++) {
+    for (int i = 0; i < count && n < max && i < 2048; i++) {
         int pid = pids[i];
         if (pid <= 0) continue;
 
@@ -21,7 +21,7 @@ size_t get_process_list(process_info_t *list, size_t max) {
 
         process_info_t *p = &list[n++];
         p->pid = pid;
-        strncpy(p->name, info.pbi_name, sizeof(p->name));
+        strncpy(p->name, info.pbi_name, sizeof(p->name) - 1);
         p->name[sizeof(p->name) - 1] = '\0';
 
         // CPU% based on delta of total user+system time between calls
@@ -47,8 +47,10 @@ size_t get_process_list(process_info_t *list, size_t max) {
 
             // find in cache
             size_t idx = cache_len;
-            for (size_t ci = 0; ci < cache_len; ci++) {
-                if (cache[ci].pid == pid) { idx = ci; break; }
+            if (cache_len > 0) {
+                for (size_t ci = 0; ci < cache_len && ci < 4096; ci++) {
+                    if (cache[ci].pid == pid) { idx = ci; break; }
+                }
             }
 
             struct timespec now;
@@ -58,14 +60,14 @@ size_t get_process_list(process_info_t *list, size_t max) {
                 dt = (double)(now.tv_sec - prev_ts.tv_sec) + (double)(now.tv_nsec - prev_ts.tv_nsec)/1e9;
             }
 
-            if (idx == cache_len && cache_len < (sizeof(cache)/sizeof(cache[0]))) {
+            if (idx == cache_len && cache_len < 4096 && cache_len < (sizeof(cache)/sizeof(cache[0]))) {
                 cache[cache_len].pid = pid;
                 cache[cache_len].total_time_ns = total_ns;
                 cache_len++;
-            } else if (idx < cache_len) {
+            } else if (idx < cache_len && idx < 4096) {
                 unsigned long long prev_ns = cache[idx].total_time_ns;
                 unsigned long long delta_ns = (total_ns > prev_ns) ? (total_ns - prev_ns) : 0ULL;
-                if (dt > 0.0) {
+                if (dt > 0.0 && num_cpus > 0) {
                     double cpu_frac = ((double)delta_ns / 1e9) / dt; // fraction of one CPU
                     cpu_pct = (float)(cpu_frac * 100.0 * (1.0));
                     // Normalize by number of CPUs to get 0-100% total across all cores
