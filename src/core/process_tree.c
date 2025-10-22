@@ -442,7 +442,7 @@ int process_tree_export_txt(process_tree_t* tree, const char* filename) {
     FILE* fp = fopen(filename, "w");
     if (!fp) return -1;
 
-    fprintf(fp, "Дерево процессов - %s", ctime(&tree->timestamp));
+    fprintf(fp, "Дерево процессов - %s", ctime((time_t *)&tree->timestamp));
     fprintf(fp, "═══════════════════════════════════════\n\n");
 
     // Здесь должна быть реализация текстового экспорта

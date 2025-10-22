@@ -569,8 +569,8 @@ void ui_draw_btop_layout(int rows, int cols, ui_state_t *state) {
     clear();
 
     // Рисуем заголовок
-    char title[32] = "МОНИТОРИНГ СИСТЕМЫ";
-    title[31] = '\0'; // Обеспечиваем завершающий нуль
+    char title[32];
+    snprintf(title, sizeof(title), "МОНИТОРИНГ СИСТЕМЫ");
     ui_draw_modern_header(title);
 
     // Рассчитываем размеры панелей

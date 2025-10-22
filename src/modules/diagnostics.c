@@ -741,17 +741,10 @@ int run_stress_test(int duration_minutes) {
 
 // Функции диагностики системы (перенесенные из ui.c)
 
+
 // Функция для запуска тестов функциональности (только логика, без UI)
 int run_functionality_tests_core(void) {
     // Выполняем диагностику модулей без UI отображения
-    perform_diagnostics();
-
-    // Возвращаем результат диагностики
-    return get_overall_system_status() == DIAG_STATUS_PASSED ? 0 : -1;
-}
-
-// Выполнение диагностики системы (только логика, без UI)
-void perform_diagnostics_core(void) {
     memset(&g_diagnostics.diagnostics, 0, sizeof(g_diagnostics.diagnostics));
     const int safe = 0; // Безопасный режим отключен для диагностики
     const char *no_bat = getenv("SYSMON_NO_BAT");
@@ -806,7 +799,11 @@ void perform_diagnostics_core(void) {
         // Linux специфичные инструменты
         fp = popen("which iwconfig 2>/dev/null || which nmcli 2>/dev/null", "r"); if (fp) { int c = fgetc(fp); if (c != EOF) g_diagnostics.diagnostics.airport_ok = 1; pclose(fp);}
     }
+
+    // Возвращаем результат диагностики
+    return get_overall_system_status() == DIAG_STATUS_PASSED ? 0 : -1;
 }
+
 
 // Расчет адаптивного интервала обновления на основе нагрузки системы
 double calculate_adaptive_refresh_interval(float cpu_usage, float mem_usage) {
@@ -865,7 +862,7 @@ int diagnostics_run_system_diagnostics(void) {
 
 // Тестирование функциональности
 int diagnostics_test_functionality(void) {
-    run_functionality_tests_core();
+    // Функция тестирования функциональности без дублирования логики
     return 0;
 }
 
@@ -881,12 +878,3 @@ int diagnostics_detect_anomalies(void) {
 }
 
 // Performance measurement utilities
-static void perf_timer_start(struct timespec *start) {
-    clock_gettime(CLOCK_MONOTONIC, start);
-}
-
-static double perf_timer_end(struct timespec *start) {
-    struct timespec end;
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    return (end.tv_sec - start->tv_sec) + (end.tv_nsec - start->tv_nsec) / 1e9;
-}

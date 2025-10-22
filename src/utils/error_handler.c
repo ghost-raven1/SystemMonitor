@@ -31,7 +31,6 @@ static void default_error_handler(const app_error_t *error);
 static void log_error_to_file(const app_error_t *error);
 static module_status_t *find_module(const char *module_name);
 static void add_known_module(const char *module_name);
-static bool is_known_module(const char *module_name);
 
 // Инициализация системы обработки ошибок
 void error_handler_init(const error_config_t *config) {

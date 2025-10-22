@@ -330,7 +330,6 @@ static int app_context_init_modules(void) {
     }
 
     WITH_CONTEXT_LOCK({
-        int success_count = 0;
         int fail_count = 0;
 
         // Инициализируем модули в порядке зависимостей
@@ -347,7 +346,6 @@ static int app_context_init_modules(void) {
             error_handler_init(&error_config);
             g_app_context->modules.error_handler_initialized = true;
             g_app_context->modules.active_modules_count++;
-            success_count++;
 
             if (g_app_context->events.on_module_initialized) {
                 g_app_context->events.on_module_initialized("error_handler");
@@ -360,7 +358,6 @@ static int app_context_init_modules(void) {
                 if (system_monitor_start() == 0) {
                     g_app_context->modules.system_monitor_initialized = true;
                     g_app_context->modules.active_modules_count++;
-                    success_count++;
 
                     if (g_app_context->events.on_module_initialized) {
                         g_app_context->events.on_module_initialized("system_monitor");
@@ -381,7 +378,6 @@ static int app_context_init_modules(void) {
                 if (developer_tools_enable() == 0) {
                     g_app_context->modules.developer_tools_initialized = true;
                     g_app_context->modules.active_modules_count++;
-                    success_count++;
 
                     if (g_app_context->events.on_module_initialized) {
                         g_app_context->events.on_module_initialized("developer_tools");
@@ -402,7 +398,6 @@ static int app_context_init_modules(void) {
                 if (diagnostics_enable() == 0) {
                     g_app_context->modules.diagnostics_initialized = true;
                     g_app_context->modules.active_modules_count++;
-                    success_count++;
 
                     if (g_app_context->events.on_module_initialized) {
                         g_app_context->events.on_module_initialized("diagnostics");

@@ -61,3 +61,21 @@
 [2025-10-22 02:23:45] INFO:app_context_init [app_context] Контекст приложения инициализирован
 [2025-10-22 02:24:53] INFO:error_handler_init [System startup] Error handler initialized
 [2025-10-22 02:24:53] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:28:51] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:29:17] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:32:59] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:34:17] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:34:17] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:34:17] INFO:ui_state_manager_init [ui_state_manager] UI State Manager initialized
+[2025-10-22 22:36:01] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:36:01] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:36:01] INFO:ui_state_manager_init [ui_state_manager] UI State Manager initialized
+[2025-10-22 22:37:54] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:37:54] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:37:54] INFO:ui_state_manager_init [ui_state_manager] UI State Manager initialized
+[2025-10-22 22:40:21] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:40:21] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:40:21] INFO:ui_state_manager_init [ui_state_manager] UI State Manager initialized
+[2025-10-22 22:41:15] INFO:error_handler_init [System startup] Error handler initialized
+[2025-10-22 22:41:15] INFO:app_context_init [app_context] Контекст приложения инициализирован
+[2025-10-22 22:41:15] INFO:ui_state_manager_init [ui_state_manager] UI State Manager initialized

@@ -373,7 +373,6 @@ int check_security_issues(security_issue_t *issues, int max_issues, int *count) 
     fp = popen("find . -name '.env' -maxdepth 3 2>/dev/null | head -5", "r");
     if (fp) {
         char line[256];
-        int env_count = 0;
         while (fgets(line, sizeof(line), fp) && *count < max_issues) {
             security_issue_t *issue = &issues[*count];
             snprintf(issue->type, sizeof(issue->type), "env_file");

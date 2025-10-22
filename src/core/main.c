@@ -16,6 +16,7 @@
 #include "platform/system_info.h"
 #include "platform/disk.h"
 #include "platform/network.h"
+#include "core/app_context.h"
 
 // Функция безопасной валидации пути конфигурационного файла
 static int is_safe_config_path(const char *path) {
@@ -242,7 +243,12 @@ int main(int argc, char *argv[]) {
         prometheus_start_server(9090);
     } else {
         // Интерактивный режим по умолчанию
+        if (app_context_init(NULL) != 0) {
+            LOG_ERROR(ERR_EXTERNAL_LIB, "Не удалось инициализировать контекст приложения", "main");
+            return -1;
+        }
         run_ui();
+        app_context_cleanup();
     }
 
     return 0;

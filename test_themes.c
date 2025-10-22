@@ -6,11 +6,24 @@
 
 int main() {
     // Инициализируем ncurses
-    initscr();
+    WINDOW* win = initscr();
+    if (win == NULL) {
+        printf("Ошибка: Не удалось инициализировать ncurses\n");
+        return 1;
+    }
+
+    if (!has_colors()) {
+        endwin();
+        printf("Ошибка: Терминал не поддерживает цвета\n");
+        return 1;
+    }
+
+    start_color();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);
+    timeout(1000); // 1 секунда таймаут для getch()
 
     // Инициализируем систему тем
     if (ui_theme_init() != 0) {
@@ -23,14 +36,14 @@ int main() {
     theme_type_t themes[] = {THEME_BTOP_DARK, THEME_NEON, THEME_MATRIX, THEME_LIGHT};
     const char* theme_names[] = {"BTOP_DARK", "NEON", "MATRIX", "LIGHT"};
 
-    int current_theme = 0;
+    int theme_index = 0;
 
     while (1) {
         // Очищаем экран
         clear();
 
         // Показываем текущую тему
-        mvprintw(2, 2, "Текущая тема: %s", theme_names[current_theme]);
+        mvprintw(2, 2, "Текущая тема: %s", theme_names[theme_index]);
         mvprintw(3, 2, "Нажмите 'n' для следующей темы, 'q' для выхода");
 
         // Применяем тему ко всему экрану
@@ -85,25 +98,40 @@ int main() {
 
         // Ожидаем ввода
         int ch = getch();
-        if (ch == 'q' || ch == 'Q') {
+        if (ch == ERR) {
+            // Таймаут, продолжаем цикл
+            continue;
+        } else if (ch == KEY_RESIZE) {
+            // Обработка изменения размера окна
+            clear();
+            refresh();
+            continue;
+        } else if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'n' || ch == 'N') {
-            current_theme = (current_theme + 1) % 4;
+            theme_index = (theme_index + 1) % 4;
 
             // Переключаем тему
-            ui_theme_set_theme(themes[current_theme]);
+            ui_theme_set_theme(themes[theme_index]);
 
             // Небольшая пауза для визуального эффекта
             usleep(200000);
         }
     }
 
-    // Завершаем работу
+    // Завершаем работу с темами
+    ui_theme_cleanup();
+
     endwin();
     printf("Тестирование тем завершено успешно!\n");
 
     // Показываем информацию о текущей теме
-    printf("Последняя активная тема: %s\n", ui_theme_get_current_theme_name());
+    const char* theme_name = ui_theme_get_current_theme_name();
+    if (theme_name != NULL) {
+        printf("Последняя активная тема: %s\n", theme_name);
+    } else {
+        printf("Ошибка: Не удалось получить имя текущей темы\n");
+    }
 
     return 0;
 }

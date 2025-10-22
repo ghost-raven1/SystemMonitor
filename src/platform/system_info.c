@@ -31,7 +31,6 @@ float get_cpu_usage() {
         vm_deallocate(mach_task_self(), (vm_address_t)cpuInfo, numCPUInfo * sizeof(integer_t));
     }
 
-    unsigned long long total = user + system + idle;
     unsigned long long diffUser, diffSystem, diffIdle, diffTotal;
     float usage = 0.0;
 
@@ -58,7 +57,6 @@ static long cached_page_size = 0;
 static time_t page_size_cache_time = 0;
 
 float get_memory_usage() {
-    static vm_statistics_data_t cached_vmstat;
     static time_t cache_time = 0;
     static float cached_result = -1.0f;
 
@@ -95,7 +93,6 @@ float get_memory_usage() {
 
     cached_result = (float)(active + inactive + wired) / total * 100.0f;
     cache_time = now;
-    cached_vmstat = vmstat;
 
     return cached_result;
 }

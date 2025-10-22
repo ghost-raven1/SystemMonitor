@@ -74,6 +74,11 @@ static int ui_init(void) {
         // Продолжаем работу даже если настройки не загрузились
     }
 
+    // Устанавливаем флаг инициализации UI в контексте
+    if (g_app_context) {
+        g_app_context->modules.ui_initialized = true;
+    }
+
     log_info("UI инициализирован успешно");
     return 0;
 }
@@ -86,6 +91,11 @@ static void ui_cleanup(void) {
     }
 
     ui_controller_cleanup();
+
+    // Сбрасываем флаг инициализации UI в контексте
+    if (g_app_context) {
+        g_app_context->modules.ui_initialized = false;
+    }
 
     endwin();
     log_info("UI деинициализирован");

@@ -652,22 +652,6 @@ void ui_draw_gradient_bar(int y, int x, int width, float percent, int base_color
     attroff(COLOR_PAIR(color_pair));
 }
 
-// Отрисовка современного заголовка в стиле btop
-void ui_draw_modern_header(const char *title) {
-    if (!title) return;
-
-    int rows, cols;
-    getmaxyx(stdscr, rows, cols);
-
-    int title_width = strlen(title) + 4; // +4 для рамки
-    int title_x = (cols - title_width) / 2;
-
-    ui_draw_modern_box(0, title_x, 3, title_width);
-
-    // Центрируем текст заголовка
-    int text_x = title_x + (title_width - strlen(title)) / 2;
-    mvprintw(1, text_x, "%s", title);
-}
 
 // Применение темы ко всему экрану
 void ui_theme_apply_to_screen(void) {
@@ -697,9 +681,6 @@ void ui_theme_apply_to_screen(void) {
 
 // Переключение темы с анимацией перехода
 void ui_theme_switch_theme(theme_type_t theme) {
-    theme_type_t old_theme = THEME_BTOP_DARK; // Определяем текущую тему
-
-    // Сохраняем текущую тему для анимации
     // Здесь можно добавить логику определения текущей темы
 
     // Применяем новую тему

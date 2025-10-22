@@ -929,7 +929,7 @@ int get_system_process_list(system_process_info_t **processes, int *count) {
 
     // Получаем список процессов через платформенный интерфейс
     process_info_t *platform_processes = NULL;
-    size_t actual_count = get_process_list_cached(&platform_processes, *count);
+    size_t actual_count = get_process_list_cached(platform_processes, *count);
 
     if (actual_count > 0 && platform_processes) {
         // Конвертируем формат процессов

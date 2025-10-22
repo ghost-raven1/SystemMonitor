@@ -11,6 +11,7 @@
 
 #include <ncurses.h>
 #include "../core/app_context.h"
+#include "../modules/diagnostics.h"
 
 // Определения структур данных диагностики
 typedef struct {

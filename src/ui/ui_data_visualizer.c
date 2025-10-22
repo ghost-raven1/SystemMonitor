@@ -690,21 +690,6 @@ int ui_save_system_snapshot(const char *filename, const system_metrics_t *metric
     return 0;
 }
 
-void ui_format_uptime(long uptime_seconds, char *buffer, size_t buffer_size) {
-    if (!buffer || buffer_size == 0) return;
-
-    if (uptime_seconds < 0) {
-        snprintf(buffer, buffer_size, "N/A");
-        return;
-    }
-
-    long s = uptime_seconds;
-    long days = s / (24L * 3600L); s %= (24L * 3600L);
-    long hours = s / 3600L; s %= 3600L;
-    long mins = s / 60L;
-
-    snprintf(buffer, buffer_size, "%ldд %ldч %ldм", days, hours, mins);
-}
 
 void ui_get_weather_info(char *buffer, size_t buffer_size, const char *city) {
     if (!buffer) return;

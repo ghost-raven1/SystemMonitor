@@ -13,12 +13,15 @@
 // Константы клавиш для удобства (используем стандартные из ncurses)
 // Чтобы избежать конфликтов, используем префикс UI_
 #define KEY_QUIT    'q'
+#undef KEY_REFRESH
 #define KEY_REFRESH 'r'
+#undef KEY_HELP
 #define KEY_HELP    'h'
 #define KEY_PGUP    339
 #define KEY_PGDN    338
 #define KEY_ESCAPE  27
 #define KEY_TAB     9
+#undef KEY_BTAB
 #define KEY_BTAB    353
 #define KEY_F5      265  // F5 для обновления
 #define KEY_F1      259  // F1 для помощи

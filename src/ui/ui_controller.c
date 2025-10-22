@@ -50,6 +50,9 @@ int ui_controller_switch_screen(ui_state_t *state, screen_type_t screen) {
     if (!state) return -1;
 
     ui_state_set_current_screen(state, screen);
+    // Обновляем метрики при переключении экрана
+    ui_state_update_system_metrics(state);
+    refresh();  // Обновляем экран сразу после переключения
     return 0;
 }
 
@@ -227,6 +230,9 @@ int ui_controller_run_system_test(ui_state_t *state) {
     // Этап 6: Финализация
     progress = 100.0f;
     ui_controller_show_testing_screen(state, progress);
+
+    // После завершения тестирования переходим к главному экрану
+    ui_controller_switch_screen(state, SCREEN_MAIN);
 
     printf("UI: System test completed\n");
     return 0;
