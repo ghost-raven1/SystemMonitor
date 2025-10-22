@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "__config": "c",
+        "__locale": "c",
+        "cstdlib": "c",
+        "locale": "c",
+        "system_error": "c",
+        "typeinfo": "c",
+        "version": "c"
+    }
+}

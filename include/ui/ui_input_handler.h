@@ -1,0 +1,184 @@
+/**
+ * UI Input Handler Module
+ *
+ * Отвечает за обработку пользовательского ввода, навигацию и управление интерфейсом.
+ * Изолирует логику обработки клавиш от бизнес-логики и рендеринга.
+ */
+
+#ifndef UI_INPUT_HANDLER_H
+#define UI_INPUT_HANDLER_H
+
+#include <ncurses.h>
+
+// Константы клавиш для удобства (используем стандартные из ncurses)
+// Чтобы избежать конфликтов, используем префикс UI_
+#define UI_KEY_QUIT    'q'
+#define UI_KEY_REFRESH 'r'
+#define UI_KEY_HELP    'h'
+#define UI_KEY_PGUP    339
+#define UI_KEY_PGDN    338
+#define UI_KEY_ESCAPE  27
+
+// Режимы ввода
+typedef enum {
+    INPUT_MODE_NAVIGATION,  // Навигация по интерфейсу
+    INPUT_MODE_FILTER,      // Режим фильтрации/поиска
+    INPUT_MODE_CONFIRM,     // Режим подтверждения действия
+    INPUT_MODE_TEXT         // Режим ввода текста
+} input_mode_t;
+
+// Структура для отслеживания состояния ввода
+typedef struct {
+    input_mode_t mode;
+    int selected_item;
+    int page_offset;
+    int total_items;
+    int items_per_page;
+    char filter_text[256];
+    int cursor_position;
+    int timeout_ms;
+} input_state_t;
+
+// Коллбэки для действий
+typedef void (*action_callback_t)(void *user_data);
+typedef void (*navigation_callback_t)(int direction, void *user_data);
+typedef void (*filter_callback_t)(const char *filter_text, void *user_data);
+
+/**
+ * Инициализация модуля обработки ввода
+ */
+void ui_input_init(void);
+
+/**
+ * Деинициализация модуля обработки ввода
+ */
+void ui_input_cleanup(void);
+
+/**
+ * Создание нового состояния ввода
+ * @param mode - режим ввода
+ * @param total_items - общее количество элементов
+ * @param items_per_page - элементов на странице
+ * @return указатель на состояние ввода
+ */
+input_state_t *ui_input_create_state(input_mode_t mode, int total_items, int items_per_page);
+
+/**
+ * Уничтожение состояния ввода
+ * @param state - указатель на состояние ввода
+ */
+void ui_input_destroy_state(input_state_t *state);
+
+/**
+ * Обработка ввода в режиме навигации
+ * @param state - состояние ввода
+ * @param ch - код клавиши
+ * @param nav_callback - коллбэк для навигации
+ * @param user_data - пользовательские данные для коллбэка
+ * @return 1 если нужно продолжить обработку, 0 если выйти
+ */
+int ui_handle_navigation_input(input_state_t *state, int ch,
+                              navigation_callback_t nav_callback, void *user_data);
+
+/**
+ * Обработка ввода в режиме фильтрации
+ * @param state - состояние ввода
+ * @param ch - код клавиши
+ * @param filter_callback - коллбэк для применения фильтра
+ * @param user_data - пользовательские данные для коллбэка
+ * @return код клавиши для дальнейшей обработки или 0
+ */
+int ui_handle_filter_input(input_state_t *state, int ch,
+                          filter_callback_t filter_callback, void *user_data);
+
+/**
+ * Обработка ввода в режиме подтверждения
+ * @param state - состояние ввода
+ * @param ch - код клавиши
+ * @param prompt - текст запроса подтверждения
+ * @return 1 если подтверждено, 0 если отменено, -1 если ошибка
+ */
+int ui_handle_confirmation_input(input_state_t *state, int ch, const char *prompt);
+
+/**
+ * Обработка ввода текста
+ * @param buffer - буфер для текста
+ * @param buffer_size - размер буфера
+ * @param ch - код клавиши
+ * @return длина введенного текста или -1 при ошибке
+ */
+int ui_handle_text_input(char *buffer, size_t buffer_size, int ch);
+
+/**
+ * Обновление выбранного элемента в состоянии навигации
+ * @param state - состояние ввода
+ * @param new_selection - новый выбранный элемент
+ */
+void ui_input_set_selection(input_state_t *state, int new_selection);
+
+/**
+ * Получение текущего выбранного элемента
+ * @param state - состояние ввода
+ * @return индекс выбранного элемента
+ */
+int ui_input_get_selection(input_state_t *state);
+
+/**
+ * Обновление фильтра в состоянии ввода
+ * @param state - состояние ввода
+ * @param filter - новый текст фильтра
+ */
+void ui_input_set_filter(input_state_t *state, const char *filter);
+
+/**
+ * Получение текущего текста фильтра
+ * @param state - состояние ввода
+ * @return указатель на текст фильтра
+ */
+const char *ui_input_get_filter(input_state_t *state);
+
+/**
+ * Проверка, является ли клавиша навигационной
+ * @param ch - код клавиши
+ * @return 1 если навигационная, 0 иначе
+ */
+int ui_is_navigation_key(int ch);
+
+/**
+ * Проверка, является ли клавиша командой выхода
+ * @param ch - код клавиши
+ * @return 1 если команда выхода, 0 иначе
+ */
+int ui_is_exit_key(int ch);
+
+/**
+ * Проверка, является ли клавиша командой помощи
+ * @param ch - код клавиши
+ * @return 1 если команда помощи, 0 иначе
+ */
+int ui_is_help_key(int ch);
+
+/**
+ * Установка таймаута для ожидания ввода
+ * @param timeout_ms - таймаут в миллисекундах
+ */
+void ui_input_set_timeout(int timeout_ms);
+
+/**
+ * Получение текущего таймаута
+ * @return таймаут в миллисекундах
+ */
+int ui_input_get_timeout(void);
+
+/**
+ * @brief Основная функция обработки ввода для главного цикла
+ * @param state - состояние ввода
+ * @param nav_callback - коллбэк для навигации
+ * @param user_data - пользовательские данные для коллбэка
+ * @return 1 если продолжить обработку, 0 если выйти
+ */
+int ui_input_handler_process(input_state_t *state,
+                           navigation_callback_t nav_callback,
+                           void *user_data);
+
+#endif // UI_INPUT_HANDLER_H

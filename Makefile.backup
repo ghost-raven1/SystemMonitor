@@ -38,7 +38,6 @@ SRC = src/core/main.c \
             src/core/developer.c \
             src/core/notifications.c \
             src/core/process_tree.c \
-            src/ui/ui.c \
             src/ui/ui_theme.c \
             src/ui/ui_data_visualizer.c \
             src/ui/ui_window_manager.c \
@@ -46,7 +45,6 @@ SRC = src/core/main.c \
             src/ui/ui_renderer.c \
             src/ui/ui_controller.c \
             src/ui/ui_state_manager.c \
-            src/ui/ui_diagnostics.c \
             src/modules/system_monitor.c \
             src/modules/developer_tools.c \
             src/modules/diagnostics.c \
